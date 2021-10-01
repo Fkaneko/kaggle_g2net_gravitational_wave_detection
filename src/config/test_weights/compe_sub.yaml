@@ -1,0 +1,7 @@
+weights_dir: "${HOME}/kaggle/working/multi_run/gsdc_train/"
+# ./model_weights/conv_position
+conf_name: ".hydra/config.yaml"
+ckpt_regex: "NeptuneLogger/${NEPT_KEY}*-*/checkpoints/epoch*.ckpt"
+model_paths: 
+  # effb3 fold 0,1,2 input_width=128
+  - [1.0, "2021-09-22_13-32-31/0"]

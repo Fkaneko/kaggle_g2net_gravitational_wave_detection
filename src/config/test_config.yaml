@@ -1,0 +1,14 @@
+#
+defaults:
+  - test_weights: compe_sub
+
+# hydra override
+hydra:
+  run:
+    dir: ../working/gsdc_${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    # Output directory for sweep runs
+    dir: ../working/multi_run/gsdc_${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+
+# test configuration
+test_with_val: False

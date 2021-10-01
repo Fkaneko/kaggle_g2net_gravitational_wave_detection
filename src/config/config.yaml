@@ -1,0 +1,183 @@
+defaults:
+  - trainer: trainer_defaluts
+
+# hydra override
+hydra:
+  run:
+    dir: ../working/gsdc_${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    # Output directory for sweep runs
+    dir: ../working/multi_run/gsdc_${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+
+# trainer override
+trainer:
+  # default_root_dir: ${hydra:run.dir}
+  gpus: 1
+  max_epochs: 25
+  precision: 16
+  benchmark: true
+  deterministic: false
+
+# neptune settings
+nept_tags: [Null]
+
+# input data config
+data_dir: ../input/g2net-gravitational-wave-detection/
+num_classes: 1
+
+sampling_info:
+  fs: 2048  # [Hz]
+  T: 2.0  # [Second] obeservation duration
+  num_sites: 3
+
+ext_data:
+  data_csv: Null
+  use_ext_psd: False
+  duration_min_s: 16
+  downsample: 1.0  # 1.0 use all data, < 1.0 downsample ratio
+  sampling_info:
+    fs: 2048  # [Hz]
+    T: 3.0  # [Second] obeservation duration
+    num_sites: 3
+
+
+wave_prepro_conf:
+  skip_whiten: False
+  skip_bandpass: False
+  psd:
+    avg_mode: "noise"
+    cache_path: "../input/g2net_average_psds/avg_psd.npy"
+    window: "tukey"
+    cache_suffix: "_psd.npy"
+
+  whiten:
+    window: "tukey"
+  bandpass:
+    range: [20,912]
+
+spec_conf:
+  with_gpu: True
+  use_second_spec: False
+  spec_lib: nnAudio  # librosa/nnAudio
+  params_type: stft_params
+  is_db: True
+  stft_params:
+    n_fft: 256  # the number of fft for each bin, coresponding to time duration
+    win_length: 256
+    hop_length: 32
+    window: hann
+    freq_scale: log   #log/linear
+    iSTFT: False
+    fmin: 10
+    fmax: 1024
+    sr: 2048
+    output_format: Complex
+  cqt_params:
+    hop_length: 32
+    bins_per_octave: 16
+    filter_scale: 0.5
+    fmin: 20
+    fmax: 1024
+    sr: 2048
+    output_format: Complex
+  db_conf:
+    is_pad: False
+    amin: 1.0e-8
+    top_db: 200
+    db_offset: 130  # db offset for cnn input
+    ref: 1.0
+
+
+
+seed: 42
+num_workers: 16
+batch_size: 128
+
+aug_mode: 1
+mix_up_conf:
+  p: 1.0
+  lambda_val: [0.0, 1.0]
+  use_mixup_label: True
+pad_conf:
+  p: 0.3
+  pad_ratio: 0.3
+  constant_values: 0.0
+psd_aug:
+  p: 0.0
+  mean: 1.0  #
+  sigma_x3: 0.3  # sigmax3
+
+
+
+# fold def
+n_splits: 5
+val_fold: 0
+
+# learning rate
+lr: 0.1
+optim_name: sgd
+warmup_ratio: 0.1
+
+is_test: false
+is_debug: false
+find_lr: false
+ckpt_path: Null
+#
+# input image def
+input_width: 128
+
+# wave augmentation
+rand_freq: 0.3
+rand_ratio: 0.3
+sigma: 1.0e-5
+
+# train proceduore
+monitor: "val_roc"
+monitor_mode: "max"
+
+# test configuration
+test_sampling_delta: 16
+test_with_val: False
+
+
+model:
+    stride_override: Null
+    type: "concat_site"  # split_site/concat_site/psd_denoise/concat_site_seg
+    loss:
+      type: "bce"  #  bce/"bce_seg_denoise"
+      weights: {"outputs":1.0,"aux_out":0.0}
+    last_act: "sigmoid"  # sigmoid/seg_act
+    split_site:
+      channels_per_site: 3
+      norm_feature: False
+      fuse_type: "feature_concat"
+    concat_site: Null
+    concat_site_seg:
+      # crop_size: 128
+      target_loss_weight: 1.0
+      l1_loss_weight: 1.0
+      var_loss_weight: 0.0000
+      predict_mask: True
+      use_full_encoder: True
+      use_cam: False
+      skip_max_pool: True
+    psd_denoise: Null
+    metrics: "mse"
+    channels_last: True
+    drop_rate: 0.0
+    timm_params:
+      encoder_name: "efficientnet_b0"
+      pretrained: True
+      num_classes: 0  # class head will be defined at different stage
+    smp_params:
+      arch_name: "unetpp"
+      encoder_name: "timm-efficientnet-b0"
+      encoder_weights: "imagenet"
+      in_channels: 3
+      classes: 1
+      decoder_attention_type: "scse"
+      # aux_params: {"palceholder": 0}
+    pool:
+      gem_power: 3  # p=1 normal avg_pool
+      gem_requires_grad: False
+

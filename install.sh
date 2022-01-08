@@ -21,7 +21,7 @@ pip install \
     albumentations \
     timm==0.4.12 \
     segmentation-models-pytorch==0.2.0 \
-    pytorch-lightning==1.4.6 \
+    pytorch-lightning \
     kornia==0.5.10
 
 # neptune-client[pytorch-lightning] \
